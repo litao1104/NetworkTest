@@ -8,13 +8,22 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.w3c.dom.Text;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import javax.xml.parsers.SAXParserFactory;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -48,17 +57,91 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     OkHttpClient client = new OkHttpClient();
                     Request request = new Request.Builder()
-                            .url("http://www.baidu.com")
+                            .url("http://10.0.2.2/get_data.json")
                             .build();
 
                     Response response = client.newCall(request).execute();
                     String responseData = response.body().string();
                     showResponse(responseData);
+                    parseJSONWithJSONObject(responseData);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }).start();
+    }
+
+    private void parseJSONWithJSONObject (String jsonData) {
+        try {
+            JSONArray jsonArray = new JSONArray(jsonData);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                String id = jsonObject.getString("id");
+                String name = jsonObject.getString("name");
+                String version = jsonObject.getString("version");
+
+                Log.d("MainActivity", "id is " + id);
+                Log.d("MainActivity", "name is " + name);
+                Log.d("MainActivity", "version is " + version);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void parseXMLWithSAX(String xmlData) {
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            XMLReader xmlReader = factory.newSAXParser().getXMLReader();
+            ContentHandler handler = new ContentHandler();
+            xmlReader.setContentHandler(handler);
+            xmlReader.parse(new InputSource(new StringReader(xmlData)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void parseXMLWithPull(String xmlData) {
+        try {
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            XmlPullParser xmlPullParser = factory.newPullParser();
+            xmlPullParser.setInput(new StringReader(xmlData));
+            int eventType = xmlPullParser.getEventType();
+
+            String id = "";
+            String name = "";
+            String version = "";
+
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                String nodeName = xmlPullParser.getName();
+                switch (eventType) {
+                    case XmlPullParser.START_TAG:
+                        if ("id".equals(nodeName)) {
+                            id = xmlPullParser.nextText();
+                        } else if ("name".equals(nodeName)) {
+                            name = xmlPullParser.nextText();
+                        } else if ("version".equals(nodeName)) {
+                            version = xmlPullParser.nextText();
+                        }
+                        break;
+                    case XmlPullParser.END_TAG:
+                        if ("app".equals(nodeName)) {
+                            Log.d("MainActivity", "id is " + id);
+                            Log.d("MainActivity", "name is " + name);
+                            Log.d("MainActivity", "version is " + version);
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+                eventType = xmlPullParser.next();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void sendRequestWithHttpURLConnection() {
