@@ -20,6 +20,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -29,11 +30,12 @@ import java.util.List;
 
 import javax.xml.parsers.SAXParserFactory;
 
+import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     TextView responseText;
 
@@ -50,7 +52,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.send_request) {
-            sendRequestWithOkHttp();
+            HttpUtil.sendOkHttpRequest("http://www.baidu.com", new okhttp3.Callback() {
+
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.d("MainActivity", "IOException is " + e.getMessage());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    String responseData = response.body().string();
+                    Log.d("MainActivity", "responseData is " + responseData);
+                }
+            });
         }
     }
 
